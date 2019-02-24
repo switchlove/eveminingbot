@@ -1,0 +1,7 @@
+{
+"prefix": "!",
+"token":"DISCORD_TOKEN",
+"clientID":"EVE_APP_ID",
+"clientSecret":"EVE_APP_SECRET",
+"dbURL":"mongodb://USER:PASSWORD@DB_ADDRESS:PORT/DB"
+}

@@ -1,0 +1,30 @@
+{
+  "name": "eveminingbot",
+  "version": "1.0.0",
+  "description": "A mining OP oriented bot for linking/add destinations and posting OP status's.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/switchlove/eveminingbot.git"
+  },
+  "author": "DevSwitch",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
+    "discord.js": "^11.4.2",
+    "ejs": "^2.6.1",
+    "eve-swagger": "^0.3.3",
+    "express": "^4.16.4",
+    "express-session": "^1.15.6",
+    "mongoose": "^5.4.14",
+    "passport": "^0.4.0",
+    "passport-eve-oauth2": "^1.0.0",
+    "path": "^0.12.7",
+    "request": "^2.88.0",
+    "timediff": "^1.1.1"
+  }
+}
