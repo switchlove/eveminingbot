@@ -2,7 +2,6 @@
 An all-in-one Mining OP bot for EVE and Discord! Integrate your fleets more closely with discord!
 
 ## Planned Features
-
 - Register fleets  
 - Fleet Ads within Discord
 - Fleet ore mined tracking
@@ -15,6 +14,6 @@ Version 1.0.0
 - Eve Server status checks complete
 - Eve character authentication complete
 
-Version 1.1.1
+Version 1.0.1
 - Upcoming
 ```
