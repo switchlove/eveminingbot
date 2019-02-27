@@ -166,7 +166,8 @@ function registerFleet(ID,fleetID,fleetName) {
 								is_free_move: result.is_free_move,
 								is_registered: result.is_registered,
 								is_voice_enabled: result.is_voice_enabled,
-								motd: result.motd
+								motd: result.motd,
+								registered_owner: ID
 							});
 							fleet.save(function(err) {
 								if (err) console.log(err);
@@ -187,7 +188,8 @@ function registerFleet(ID,fleetID,fleetName) {
 							is_free_move: result.is_free_move,
 							is_registered: result.is_registered,
 							is_voice_enabled: result.is_voice_enabled,
-							motd: result.motd
+							motd: result.motd,
+							registered_owner: ID
 						});
 						fleet.save(function(err) {
 							if (err) console.log(err);
