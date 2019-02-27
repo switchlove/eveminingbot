@@ -2,7 +2,7 @@ const express = require("express");
 const session = require("express-session");
 const path = require("path");
 const timediff = require("timediff");
-const request = require('request');
+const axios = require('axios');
 const Discord = require("discord.js");
 const client = new Discord.Client();
 const mongoose = require("mongoose");
@@ -10,6 +10,7 @@ const esi = require("eve-swagger");
 const passport = require("passport");
 const EveOAuth2Strategy = require("passport-eve-oauth2").Strategy;
 const User = require("./app/models/user");
+const Fleet = require("./app/models/fleet");
 const data = require("./config.json");
 
 mongoose.connect(data.dbURL, { useNewUrlParser: true }); 
@@ -76,8 +77,8 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session()); 
 
-const prefix = "!";
-var currentTime = new Date().toLocaleTimeString();
+ currentTime = new Date().toLocaleTimeString();
+var startTimeISO = new Date().toISOString();
 
 app.get("/auth/eve",
 	passport.authenticate("eveOnline")
@@ -103,41 +104,100 @@ function isLoggedIn(req, res, next) {
     res.redirect('/');
 }
 
-function refreshToken() {
-	request.post('https://login.eveonline.com/oauth/token', {
-		json: {
-			todo: 'Buy the milk'
+async function refreshToken(refreshToken,ID){
+	var refreshToken = refreshToken;
+	var options = {
+		method: 'post',
+		data: {
+		  'grant_type':"refresh_token",
+		  'refresh_token':refreshToken
+		},
+		json: true, 
+		timeout: 10000, 
+		url: 'https://login.eveonline.com/v2/oauth/token',
+		headers: {
+			"Authorization": "Basic ZTQ4MTQ3NjU2OTY0NDhhNjgwNmEwNWU0ZjZiYTU3OGQ6ZEtyNG9rOEpRbHVkTE9xOWNSZWZzdHdLNHFtMFl3ZmhWbFprcFR5UQ==",
+			"Accept": "application/json",
+			"Content-Type": "application/json",
+			"Cache-Control": "no-cache"
 		}
-	}, (error, res, body) => {
-		if (error) {
-			console.error(error)
-		return
-		}
-		console.log(`statusCode: ${res.statusCode}`)
-		console.log(body)
+	}
+	
+	axios(options)
+	.then(function (response) {
+		console.log(response.data);
+		var newExpireDate = (new Date).getTime() + response.data.expires_in;
+		User.findOne({  'DiscordID' : ID },function(err, doc) {
+			User.findOneAndUpdate(doc._id, {$set: { accessToken: response.data.access_token, refreshToken: response.data.refresh_token, ExpiresOn: newExpireDate }}, {'new': true}, function (err, result) {
+				if (err) { client.users.get(disccordID).send('There was a problem refreshing your access token!') }
+			});
+		});
 	})
-}
+	.catch(function (error) {
+		console.log(error);
+		client.users.get(disccordID).send('There was a problem refreshing your access token!')
+	});	
+
+	return;
+};
 
 function linkAccounts(ID,charName) {
 	var disccordID = ID;
 	var eveCharName = charName;
 	User.findOne({  'CharacterName' : charName },function(err, doc) {
 		User.findOneAndUpdate(doc._id, {$set: { DiscordID: disccordID }}, {'new': true}, function (err, result) {
-			if (err) { res.send('There was a problem adding the information to the database.') }
+			if (err) { client.users.get(disccordID).send('There was a problem adding the information to the database.') }
 		});
 	});
 	client.users.get(disccordID).send("Thank you for linking your EVE and Discord accounts! From here all parts of the bot will work for you!")
 }
 
-function registerFleet(ID,fleetID) {
-	var fleetID = fleetID;
+function registerFleet(ID,fleetID,fleetName) {
 	User.findOne({  'DiscordID' : ID },function(err, doc) {
-		console.log(doc)
-		var milliseconds = (new Date).getTime();
 		if ( doc.ExpiresOn <= Date.now() ) {
-			console.log('Do refresh')
+			refreshToken(doc.refreshToken,ID);
+			User.findOne({  'DiscordID' : ID },function(err, doc) {
+				esi2.characters(doc.CharacterID, doc.accessToken).fleet(fleetID).info().then(result => {
+					console.error(fleetName + " : " + result);
+					Fleet.findOne({ 'fleet_name' : fleetName }, function(err, fleet) {
+						if (!fleet) {
+							fleet = new Fleet({
+								fleet_name: fleetName,
+								is_free_move: result.is_free_move,
+								is_registered: result.is_registered,
+								is_voice_enabled: result.is_voice_enabled,
+								motd: result.motd
+							});
+							fleet.save(function(err) {
+								if (err) console.log(err);
+							});
+						}
+					});
+				}).catch(error => {
+					console.error(error);
+				});
+			});
 		} else {
-			esi2.characters(doc.CharacterID, doc.accessToken).fleet(fleetID).info()
+			esi2.characters(doc.CharacterID, doc.accessToken).fleet(fleetID).info().then(result => {
+				console.error(fleetName + " : " + result);
+				Fleet.findOne({ 'fleet_name' : fleetName }, function(err, fleet) {
+					if (!fleet) {
+						fleet = new Fleet({
+							fleet_name: fleetName,
+							is_free_move: result.is_free_move,
+							is_registered: result.is_registered,
+							is_voice_enabled: result.is_voice_enabled,
+							motd: result.motd
+						});
+						fleet.save(function(err) {
+							if (err) console.log(err);
+						});
+					}
+				});
+			}).catch(error => {
+				console.error(error);
+			});
+
 		}
 	});
 }
@@ -147,7 +207,7 @@ function fleet() {
 }
 
 client.on("ready", () => {
-	//console.log(`[ BOT ] : ${currentTime} : Logged in as ${client.user.tag}, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds!`);
+	console.log(`[ BOT ] : ${currentTime} : Logged in as ${client.user.tag}, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds!`);
 	console.log(`------`);
 
 	function tranquilityStatus() {
@@ -174,19 +234,26 @@ client.on("ready", () => {
 			console.error(error);
 		});
 	}
+	
+	function botUptime() {
+		var n = new Date().toISOString();
+		var diff = timediff(startTimeISO, n, 'DHm');
+		client.user.setPresence({ game: { name: `Bot uptime ${diff.days}d ${diff.hours}h ${diff.minutes}m`, type: 0 } });
+	}
 
 	function botPresence(client) {
 		tranquilityStatus();
+		setTimeout(function() { botUptime(); }, 15000);
 	}
 
 	botPresence(client);
-	setInterval(function() { botPresence(client); }, 15000);
+	setInterval(function() { botPresence(client); }, 25000);
 });
 
 client.on("message", async message => {
     if(message.author.bot) return;
-	if(message.content.indexOf(prefix) !== 0) return;
-	const args = message.content.slice(prefix.length).trim().split(/ +/g);
+	if(message.content.indexOf(data.prefix) !== 0) return;
+	const args = message.content.slice(data.prefix.length).trim().split(/ +/g);
 	const command = args.shift().toLowerCase();
 
 	if(command === "auth") {
@@ -214,7 +281,10 @@ client.on("message", async message => {
 		var ID = message.author.id; 
 		if(!fleetID)
 			return message.reply("Please include your fleet ID to register a fleet!");
-		registerFleet(ID,fleetID);		
+		let fleetName = args.slice(1).join(' ');
+		if(!fleetName)
+		  return message.reply("Please include the name of the Fleet!");
+		registerFleet(ID,fleetID,fleetName);		
 	}
 
 	if(command === "location") {
@@ -223,7 +293,7 @@ client.on("message", async message => {
 	
 });
 
-client.login(data.toekn);
+client.login(data.token);
 app.listen(5000, () => {
-  console.info("Running at http://149.56.225.38:5000/");
+	console.info(`[ EJS ] : ${currentTime} : Eve Auth server started: http://149.56.225.38:5000/`);
 });

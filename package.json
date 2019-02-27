@@ -14,6 +14,7 @@
   "author": "DevSwitch",
   "license": "GPL-3.0",
   "dependencies": {
+    "axios": "^0.18.0",
     "bcrypt-nodejs": "0.0.3",
     "discord.js": "^11.4.2",
     "ejs": "^2.6.1",
@@ -24,7 +25,6 @@
     "passport": "^0.4.0",
     "passport-eve-oauth2": "^1.0.0",
     "path": "^0.12.7",
-    "request": "^2.88.0",
     "timediff": "^1.1.1"
   }
 }
