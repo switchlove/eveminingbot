@@ -152,7 +152,7 @@ function linkAccounts(ID,charName) {
 	client.users.get(disccordID).send("Thank you for linking your EVE and Discord accounts! From here all parts of the bot will work for you!")
 }
 
-function registerFleet(ID,fleetID,fleetName) {
+function registerFleet(ID,fleetID,fleetName,channelID) {
 	User.findOne({  'DiscordID' : ID },function(err, doc) {
 		if ( doc.ExpiresOn <= Date.now() ) {
 			refreshToken(doc.refreshToken,ID);
@@ -168,6 +168,8 @@ function registerFleet(ID,fleetID,fleetName) {
 								is_voice_enabled: result.is_voice_enabled,
 								motd: result.motd,
 								registered_owner: ID,
+								is_active: "1",
+								fleet_location: "",
 								fleet_members: []
 							});
 							fleet.save(function(err) {
@@ -188,7 +190,7 @@ function registerFleet(ID,fleetID,fleetName) {
 				}).catch(error => {
 					console.error(error);
 				});
-				
+				client.channels.get(channelID).send('Thank you for registering your fleet with the bot! Please use the !location command to set the fleets location next once you are in the target belt!');
 			});
 		} else {
 			esi2.characters(doc.CharacterID, doc.accessToken).fleet(fleetID).info().then(result => {
@@ -202,6 +204,8 @@ function registerFleet(ID,fleetID,fleetName) {
 							is_voice_enabled: result.is_voice_enabled,
 							motd: result.motd,
 							registered_owner: ID,
+							is_active: "1",
+							fleet_location: "",
 							fleet_members: []
 						});
 						fleet.save(function(err) {
@@ -222,11 +226,31 @@ function registerFleet(ID,fleetID,fleetName) {
 			}).catch(error => {
 				console.error(error);
 			});
+			client.channels.get(channelID).send('Thank you for registering your fleet with the bot! Please use the !location command to set the fleets location next once you are in the target belt!');
 		}
 	});
 }
 
-function fleet() {
+function getLocation(ID,channelID) {
+	User.findOne({  'DiscordID' : ID },function(err, doc) {
+		esi2.characters(doc.CharacterID, doc.accessToken).location().then(result => {
+			console.log(result)
+			Fleet.findOne({  'registered_owner' : ID },function(err, doc) {
+				Fleet.findOneAndUpdate(doc._id, {$set: { fleet_location: result.solar_system_id }}, {'new': true}, function (err, result) {
+					if (err) { client.users.get(disccordID).send('There was a problem adding your location!') }
+				});
+			});	
+		}).catch(error => {
+			console.error(error);
+		});
+	});
+}
+
+function checkInactiveFleets() {
+	
+}
+
+function listActiveFleets() {
 	
 }
 
@@ -303,18 +327,30 @@ client.on("message", async message => {
 	if(command === "register") {
 		let fleetID = args[0];
 		var ID = message.author.id; 
+		var channelID = message.channel.id;
 		if(!fleetID)
 			return message.reply("Please include your fleet ID to register a fleet!");
 		let fleetName = args.slice(1).join(' ');
 		if(!fleetName)
 		  return message.reply("Please include the name of the Fleet!");
-		registerFleet(ID,fleetID,fleetName);		
+		registerFleet(ID,fleetID,fleetName,channelID);		
 	}
 
 	if(command === "location") {
-		
+		var ID = message.author.id; 
+		var channelID = message.channel.id;
+		getLocation(ID,channelID);
 	}
 	
+	if(command === "fleets") {
+		console.log(message.channel.id)
+	}
+	
+	if(command === "check_fleets") {
+		if(!message.member.roles.some(r=>["Admin", "Bot"].includes(r.name)) )
+			return message.reply("Sorry, you don't have permissions to use this!");
+		checkInactiveFleets();
+	}
 });
 
 client.login(data.token);

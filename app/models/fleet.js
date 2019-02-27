@@ -20,6 +20,12 @@ var userSchema = mongoose.Schema({
 	},
 	registered_owner : {
 		type : String
+	},	
+	is_active : {
+		type : String
+	},
+	fleet_location : {
+		type : String
 	},
 	fleet_members : {
 		type : Array
