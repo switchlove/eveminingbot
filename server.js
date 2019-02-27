@@ -167,16 +167,28 @@ function registerFleet(ID,fleetID,fleetName) {
 								is_registered: result.is_registered,
 								is_voice_enabled: result.is_voice_enabled,
 								motd: result.motd,
-								registered_owner: ID
+								registered_owner: ID,
+								fleet_members: []
 							});
 							fleet.save(function(err) {
 								if (err) console.log(err);
 							});
 						}
 					});
+					esi2.characters(doc.CharacterID, doc.accessToken).fleet(fleetID).members().then(result => {
+						console.error(result);
+						Fleet.findOne({  'fleet_name' : fleetName },function(err, doc) {
+							Fleet.findOneAndUpdate(doc._id, {$set: { fleet_members: result }}, {'new': true}, function (err, result) {
+								if (err) { client.users.get(disccordID).send('There was a problem refreshing your access token!') }
+							});
+						});
+					}).catch(error => {
+						console.error(error);
+					});
 				}).catch(error => {
 					console.error(error);
 				});
+				
 			});
 		} else {
 			esi2.characters(doc.CharacterID, doc.accessToken).fleet(fleetID).info().then(result => {
@@ -189,17 +201,27 @@ function registerFleet(ID,fleetID,fleetName) {
 							is_registered: result.is_registered,
 							is_voice_enabled: result.is_voice_enabled,
 							motd: result.motd,
-							registered_owner: ID
+							registered_owner: ID,
+							fleet_members: []
 						});
 						fleet.save(function(err) {
 							if (err) console.log(err);
 						});
 					}
 				});
+				esi2.characters(doc.CharacterID, doc.accessToken).fleet(fleetID).members().then(result => {
+					console.error(result);
+					Fleet.findOne({  'fleet_name' : fleetName },function(err, doc) {
+						Fleet.findOneAndUpdate(doc._id, {$set: { fleet_members: result }}, {'new': true}, function (err, result) {
+							if (err) { client.users.get(disccordID).send('There was a problem refreshing your access token!') }
+						});
+					});	
+				}).catch(error => {
+					console.error(error);
+				});
 			}).catch(error => {
 				console.error(error);
 			});
-
 		}
 	});
 }

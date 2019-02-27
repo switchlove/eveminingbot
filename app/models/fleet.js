@@ -18,8 +18,11 @@ var userSchema = mongoose.Schema({
 	motd : {
 		type : String
 	},
-	refreshToken : {
+	registered_owner : {
 		type : String
+	},
+	fleet_members : {
+		type : Array
 	}
 });
 
