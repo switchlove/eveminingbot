@@ -6,6 +6,9 @@ var userSchema = mongoose.Schema({
 	fleet_name : {
 		type: String
 	},
+	fleet_id : {
+		type: String
+	},
 	is_free_move : {
 		type: String
 	},

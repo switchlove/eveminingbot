@@ -163,6 +163,7 @@ function registerFleet(ID,fleetID,fleetName,channelID) {
 						if (!fleet) {
 							fleet = new Fleet({
 								fleet_name: fleetName,
+								fleet_id: fleetID,
 								is_free_move: result.is_free_move,
 								is_registered: result.is_registered,
 								is_voice_enabled: result.is_voice_enabled,
@@ -199,6 +200,7 @@ function registerFleet(ID,fleetID,fleetName,channelID) {
 					if (!fleet) {
 						fleet = new Fleet({
 							fleet_name: fleetName,
+							fleet_id: fleetID,
 							is_free_move: result.is_free_move,
 							is_registered: result.is_registered,
 							is_voice_enabled: result.is_voice_enabled,
@@ -247,7 +249,21 @@ function getLocation(ID,channelID) {
 }
 
 function checkInactiveFleets() {
-	
+	Fleet.find({  'is_active' : "1" },function(err, doc) {
+		doc.forEach(function(value) {
+			User.findOne({  'DiscordID' : value.registered_owner },function(err, docs) {
+				esi2.characters(docs.CharacterID, docs.accessToken).fleet(value.fleet_id).info().then(result => {
+					console.log(result);
+				}).catch(error => {
+					Fleet.findOne({  'fleet_id' : value.fleet_id },function(err, doc) {
+						Fleet.findOneAndUpdate(doc._id, {$set: { is_active: "0" }}, {'new': true}, function (err, result) {
+							if (err) { console.log(err); }
+						});
+					});	
+				});
+			});
+		});
+	});
 }
 
 function listActiveFleets() {
