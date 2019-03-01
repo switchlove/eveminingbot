@@ -179,7 +179,6 @@ function registerFleet(ID,fleetID,fleetName,channelID) {
 						}
 					});
 					esi2.characters(doc.CharacterID, doc.accessToken).fleet(fleetID).members().then(result => {
-						console.error(result);
 						Fleet.findOne({  'fleet_name' : fleetName },function(err, doc) {
 							Fleet.findOneAndUpdate(doc._id, {$set: { fleet_members: result }}, {'new': true}, function (err, result) {
 								if (err) { client.users.get(disccordID).send('There was a problem refreshing your access token!') }
@@ -216,7 +215,6 @@ function registerFleet(ID,fleetID,fleetName,channelID) {
 					}
 				});
 				esi2.characters(doc.CharacterID, doc.accessToken).fleet(fleetID).members().then(result => {
-					console.error(result);
 					Fleet.findOne({  'fleet_name' : fleetName },function(err, doc) {
 						Fleet.findOneAndUpdate(doc._id, {$set: { fleet_members: result }}, {'new': true}, function (err, result) {
 							if (err) { client.users.get(disccordID).send('There was a problem refreshing your access token!') }
@@ -299,6 +297,16 @@ client.on("ready", () => {
 		});
 	}
 	
+	function numberActiveFleets() {
+		Fleet.find({  'is_active' : "1" },function(err, doc) {
+			var i = 0;
+			doc.forEach(function(value) {
+				i++
+			});
+			client.user.setPresence({ game: { name: `Active Fleets ${i}`, type: 0 } });
+		});
+	}
+	
 	function botUptime() {
 		var n = new Date().toISOString();
 		var diff = timediff(startTimeISO, n, 'DHm');
@@ -307,11 +315,13 @@ client.on("ready", () => {
 
 	function botPresence(client) {
 		tranquilityStatus();
-		setTimeout(function() { botUptime(); }, 15000);
+		setTimeout(function() { numberActiveFleets(); }, 15000);
+		setTimeout(function() { botUptime(); }, 20000);
 	}
 
 	botPresence(client);
 	setInterval(function() { botPresence(client); }, 25000);
+	setInterval(function() { checkInactiveFleets(client); }, 1800000);
 });
 
 client.on("message", async message => {
