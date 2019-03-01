@@ -330,6 +330,34 @@ client.on("message", async message => {
 	const args = message.content.slice(data.prefix.length).trim().split(/ +/g);
 	const command = args.shift().toLowerCase();
 
+	
+	if(command === "help") {
+		const embed = new Discord.RichEmbed()
+			.setTitle("Command Listing for EVE OP Bot!")
+			.setColor("#C70039")
+			.setDescription("Here you can see the commands that you have access to with the EVE OP Bot!")
+			.setFooter("Have Issues or Concerns? Please use the !report command!", "")
+			.addField("General","!help - Shows this message.\n!report - report an issue with bot.\n!feedback - give feedback about the bot.\n!auth - Gets the link to the authenticate your eve account.\n!link [CHAR_NAME] - Links your previously authenticated eve account to your discord account.\n!fleets - Lists all current active and registered fleets. (Not Working)")
+			.addField("Fleet","!register [FLEET_ID] [FLEET_NAME] - Registers your fleet with the bot for tracking and ads.\n!location - Updates the fleet location based off your current location. (Must be registered fleet boss)")
+		message.channel.send({embed});
+	}
+	
+	if(command === "report") {
+		client.users.get("213488164826906624").send({embed: {
+			color: 13632027,
+			"title": `Report from ${message.member.displayName}`,
+			"description":`<@${message.member.id}> ${message.content}`,
+		}});
+	}
+	
+	if(command === "feedback") {
+		client.users.get("213488164826906624").send({embed: {
+			color: 4289797,
+			"title": `Feedback from ${message.member.displayName}`,
+			"description":`<@${message.member.id}> ${message.content}`,
+		}});
+	}
+
 	if(command === "auth") {
 	    var user = client.user;
 		var em = new Discord.RichEmbed();
